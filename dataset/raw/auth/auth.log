@@ -1,0 +1,10 @@
+2026-07-19T21:07:46.993360-04:00 osboxes sudo:  osboxes : TTY=pts/1 ; PWD=/home/osboxes ; USER=root ; COMMAND=/usr/bin/cp /var/log/syslog /var/log/syslog.1 /var/log/syslog.1.gz-2026071921.backup /var/log/syslog.2.gz /media/sf_LLMMM/dataset/raw/syslog/
+2026-07-19T21:07:47.023232-04:00 osboxes sudo: pam_unix(sudo:session): session opened for user root(uid=0) by osboxes(uid=1000)
+2026-07-19T21:07:49.077204-04:00 osboxes sudo: pam_unix(sudo:session): session closed for user root
+2026-07-19T21:09:37.540753-04:00 osboxes sudo:  osboxes : TTY=pts/1 ; PWD=/home/osboxes ; USER=root ; COMMAND=/usr/bin/ls
+2026-07-19T21:09:37.541379-04:00 osboxes sudo: pam_unix(sudo:session): session opened for user root(uid=0) by osboxes(uid=1000)
+2026-07-19T21:09:37.561769-04:00 osboxes sudo: pam_unix(sudo:session): session closed for user root
+2026-07-19T21:09:51.680702-04:00 osboxes sudo:  osboxes : TTY=pts/1 ; PWD=/home/osboxes ; USER=root ; COMMAND=/usr/bin/cp /var/log/auth.log /var/log/auth.log.1 /var/log/auth.log.1.gz-2026071921.backup /var/log/auth.log.2.gz /media/sf_LLMMM/dataset/raw/auth/
+2026-07-19T21:09:51.699011-04:00 osboxes sudo: pam_unix(sudo:session): session opened for user root(uid=0) by osboxes(uid=1000)
+2026-07-19T21:09:51.764863-04:00 osboxes sudo: pam_unix(sudo:session): session closed for user root
+2026-07-19T21:12:22.241498-04:00 osboxes sudo:  osboxes : TTY=pts/1 ; PWD=/home/osboxes ; USER=root ; COMMAND=/usr/bin/cp /var/log/auth.log /media/sf_LLMMM/dataset/raw/auth/

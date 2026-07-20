@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# VS Code
+.vscode/
+
+# Python testing
+.pytest_cache/
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+
+# Reader state
+reader_state.json
+
+# Logs generated during testing
+*.tmp
