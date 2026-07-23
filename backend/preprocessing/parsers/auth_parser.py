@@ -295,3 +295,22 @@ class AuthParser:
         """
 
         return "auth"
+    def info(self):
+        """
+        Return parser metadata.
+        """
+
+        return {
+            "parser": "AuthParser",
+            "version": "1.0",
+            "supported_log": "auth",
+            "supported_events": [
+                "AUTH_FAILURE",
+                "AUTH_SUCCESS",
+                "INVALID_USER",
+                "SESSION_OPEN",
+                "SESSION_CLOSE",
+                "SUDO_COMMAND",
+                "PASSWORD_CHANGE",
+            ],
+        }

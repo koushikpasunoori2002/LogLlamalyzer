@@ -1,16 +1,16 @@
 """
+parser_factory.py
+
 Creates parser objects.
 
-The factory selects the correct parser based on
-the detected log type.
+The factory selects the correct parser
+based on the detected log type.
 """
 
 from .auth_parser import AuthParser
 from .syslog_parser import SyslogParser
 from .kern_parser import KernParser
-from .dpkg_parser import DpkgParser
-from .dmesg_parser import DmesgParser
-
+ 
 
 class ParserFactory:
 
@@ -19,12 +19,8 @@ class ParserFactory:
         "auth": AuthParser,
 
         "syslog": SyslogParser,
-
+        
         "kern": KernParser,
-
-        "dpkg": DpkgParser,
-
-        "dmesg": DmesgParser,
 
     }
 
