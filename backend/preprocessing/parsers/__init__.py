@@ -10,3 +10,4 @@ from .syslog_parser import SyslogParser
 
 from .kern_parser import KernParser
 
+from .dpkg_parser import DpkgParser
