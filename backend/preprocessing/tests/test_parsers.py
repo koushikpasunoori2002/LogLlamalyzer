@@ -1,49 +1,82 @@
 """
-Run:
+test_parsers.py
 
-python backend/tests/preprocessing/test_parsers.py
+Tests the ParserFactory using supported log files.
 """
 
 from pathlib import Path
 import sys
 
+# ------------------------------------------------------------------
+# Project Root
+# ------------------------------------------------------------------
+
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-sys.path.append(str(PROJECT_ROOT))
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+# ------------------------------------------------------------------
+# Imports
+# ------------------------------------------------------------------
 
 from backend.preprocessing.detector.file_detector import FileDetector
 from backend.preprocessing.parsers import ParserFactory
 
-detector = FileDetector()
+# ------------------------------------------------------------------
+# Dataset
+# ------------------------------------------------------------------
 
 FILES = [
-
-    "dataset/raw/auth/auth.log",
-
-    "dataset/raw/syslog/syslog",
-
-    "dataset/raw/kern/kern.log",
-
-    "dataset/raw/dpkg/dpkg.log",
-
-    "dataset/raw/dmesg/dmesg.1.gz",
-
+    PROJECT_ROOT / "dataset" / "raw" / "auth" / "auth.log",
+    PROJECT_ROOT / "dataset" / "raw" / "syslog" / "syslog",
+    PROJECT_ROOT / "dataset" / "raw" / "kern" / "kern.log",
+    PROJECT_ROOT / "dataset" / "raw" / "dpkg" / "dpkg.log",
+    PROJECT_ROOT / "dataset" / "raw" / "dmesg" / "dmesg.1.gz",
 ]
 
-print("=" * 60)
-print("PHASE 4 PARSER FACTORY TEST")
-print("=" * 60)
 
-for file in FILES:
+# ------------------------------------------------------------------
+# Main Test
+# ------------------------------------------------------------------
 
-    info = detector.detect(file)
+def main():
 
-    parser = ParserFactory.create_parser(info.log_type)
+    detector = FileDetector()
 
-    print()
+    print("=" * 70)
+    print("PARSER FACTORY TEST")
+    print("=" * 70)
 
-    print(f"File      : {file}")
+    for file in FILES:
 
-    print(f"Parser    : {type(parser).__name__}")
+        if not file.exists():
 
-    print(parser.parse("Hello World"))
+            print(f"\nSKIPPED : {file.name}")
+
+            continue
+
+        info = detector.detect(file)
+
+        parser = ParserFactory.create(info.log_type)
+
+        print("\n" + "=" * 70)
+        print(f"File      : {file.name}")
+        print(f"Log Type  : {info.log_type}")
+        print(f"Parser    : {type(parser).__name__}")
+        print("=" * 70)
+
+        sample_records = parser.parse("Hello World")
+
+        print(f"Sample Parse Result : {sample_records}")
+
+    print("\n" + "=" * 70)
+    print("PARSER FACTORY TEST PASSED")
+    print("=" * 70)
+
+
+# ------------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    main()

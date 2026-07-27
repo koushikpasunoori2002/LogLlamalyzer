@@ -1,16 +1,24 @@
 """
-Test all reader modules.
+test_readers.py
 
-Run:
-python backend/preprocessing/tests/test_readers.py
+Tests all reader modules.
 """
 
 from pathlib import Path
 import sys
 
-# Add project root to Python path
+# ------------------------------------------------------------------
+# Project Root
+# ------------------------------------------------------------------
+
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-sys.path.append(str(PROJECT_ROOT))
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+# ------------------------------------------------------------------
+# Imports
+# ------------------------------------------------------------------
 
 from backend.preprocessing.readers import (
     FileReader,
@@ -18,101 +26,104 @@ from backend.preprocessing.readers import (
     PersistentReader,
 )
 
-# -----------------------------
-# Dataset paths
-# -----------------------------
+# ------------------------------------------------------------------
+# Dataset
+# ------------------------------------------------------------------
 
 DATASET = PROJECT_ROOT / "dataset" / "raw"
 
 AUTH_LOG = DATASET / "auth" / "auth.log"
 AUTH_GZ = DATASET / "auth" / "auth.log.1.gz"
 
-print("=" * 60)
-print("PHASE 1 READER TESTS")
-print("=" * 60)
 
-# ----------------------------------------------------
-# Test 1
-# ----------------------------------------------------
+# ------------------------------------------------------------------
+# Main Test
+# ------------------------------------------------------------------
 
-print("\n[TEST 1] FileReader")
+def main():
 
-reader = FileReader()
+    print("=" * 70)
+    print("READER MODULE TEST")
+    print("=" * 70)
 
-try:
+    # --------------------------------------------------------------
+    # FileReader
+    # --------------------------------------------------------------
 
-    text = reader.read(AUTH_LOG)
+    print("\n[1] FileReader")
 
-    print("PASS")
-
-    print(f"Characters read : {len(text)}")
-
-    print("Preview:")
-
-    print(text[:300])
-
-except Exception as e:
-
-    print("FAIL")
-
-    print(e)
-
-# ----------------------------------------------------
-# Test 2
-# ----------------------------------------------------
-
-print("\n[TEST 2] GzipReader")
-
-if AUTH_GZ.exists():
-
-    gz = GzipReader()
+    reader = FileReader()
 
     try:
 
-        text = gz.read(AUTH_GZ)
+        text = reader.read(AUTH_LOG)
 
         print("PASS")
+        print(f"Characters Read : {len(text)}")
 
-        print(f"Characters read : {len(text)}")
-
-        print("Preview:")
-
+        print("\nPreview")
+        print("-" * 70)
         print(text[:300])
 
-    except Exception as e:
+    except Exception as error:
 
-        print("FAIL")
+        print(f"FAIL : {error}")
 
-        print(e)
+    # --------------------------------------------------------------
+    # GzipReader
+    # --------------------------------------------------------------
 
-else:
+    print("\n[2] GzipReader")
 
-    print("SKIPPED")
+    if AUTH_GZ.exists():
 
-    print("auth.log.1.gz not found")
+        gzip_reader = GzipReader()
 
-# ----------------------------------------------------
-# Test 3
-# ----------------------------------------------------
+        try:
 
-print("\n[TEST 3] PersistentReader")
+            text = gzip_reader.read(AUTH_GZ)
 
-persistent = PersistentReader()
+            print("PASS")
+            print(f"Characters Read : {len(text)}")
 
-try:
+            print("\nPreview")
+            print("-" * 70)
+            print(text[:300])
 
-    new_data = persistent.read_increment(str(AUTH_LOG))
+        except Exception as error:
 
-    print("PASS")
+            print(f"FAIL : {error}")
 
-    print("Returned")
+    else:
 
-    print(len(new_data), "characters")
+        print("SKIPPED : auth.log.1.gz not found")
 
-except Exception as e:
+    # --------------------------------------------------------------
+    # PersistentReader
+    # --------------------------------------------------------------
 
-    print("FAIL")
+    print("\n[3] PersistentReader")
 
-    print(e)
+    persistent_reader = PersistentReader()
 
-print("\nFinished.")
+    try:
+
+        new_data = persistent_reader.read_increment(str(AUTH_LOG))
+
+        print("PASS")
+        print(f"Characters Returned : {len(new_data)}")
+
+    except Exception as error:
+
+        print(f"FAIL : {error}")
+
+    print("\n" + "=" * 70)
+    print("READER MODULE TEST PASSED")
+    print("=" * 70)
+
+
+# ------------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    main()

@@ -1,8 +1,7 @@
 """
 test_kern_parser.py
 
-Tests the KernParser using a real kern.log file.
-
+Integration test for the Kernel log preprocessing pipeline.
 """
 
 from pathlib import Path
@@ -14,14 +13,15 @@ from collections import Counter
 # ------------------------------------------------------------------
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-sys.path.append(str(PROJECT_ROOT))
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 # ------------------------------------------------------------------
 # Imports
 # ------------------------------------------------------------------
 
-from backend.preprocessing.readers.file_reader import FileReader
-from backend.preprocessing.parsers.kern_parser import KernParser
+from backend.preprocessing.pipeline import PreprocessingPipeline
 
 # ------------------------------------------------------------------
 # Dataset
@@ -36,30 +36,29 @@ KERN_LOG = (
 )
 
 
+# ------------------------------------------------------------------
+# Main Test
+# ------------------------------------------------------------------
+
 def main():
 
     print("=" * 70)
-    print("KERNEL PARSER TEST")
+    print("KERNEL PREPROCESSING PIPELINE TEST")
     print("=" * 70)
 
-    # --------------------------------------------------------------
-    # Read file
-    # --------------------------------------------------------------
-
-    reader = FileReader()
-
-    text = reader.read(KERN_LOG)
-
-    print(f"\nCharacters Read : {len(text)}")
+    pipeline = PreprocessingPipeline()
 
     # --------------------------------------------------------------
-    # Parse
+    # Process File
     # --------------------------------------------------------------
 
-    parser = KernParser()
+    info, records = pipeline.process_with_metadata(KERN_LOG)
 
-    records = parser.parse(text)
-
+    print(f"\nFilename        : {info.filename}")
+    print(f"Log Type        : {info.log_type}")
+    print(f"Reader          : {info.reader}")
+    print(f"Compressed      : {info.compressed}")
+    print(f"Rotation        : {info.rotation}")
     print(f"Records Parsed  : {len(records)}")
 
     # --------------------------------------------------------------
@@ -73,9 +72,7 @@ def main():
     for record in records:
 
         event_counter[record.event_type] += 1
-
         severity_counter[record.severity] += 1
-
         process_counter[record.process] += 1
 
     print("\n" + "=" * 70)
@@ -103,23 +100,28 @@ def main():
         print(f"{process:<30}{count}")
 
     # --------------------------------------------------------------
-    # First five records
+    # Preview Records
     # --------------------------------------------------------------
 
     print("\n" + "=" * 70)
     print("FIRST FIVE PARSED RECORDS")
     print("=" * 70)
 
-    for i, record in enumerate(records[:5], start=1):
+    for index, record in enumerate(records[:5], start=1):
 
-        print(f"\nRecord {i}")
+        print(f"\nRecord {index}")
 
         print(record)
 
         print("-" * 70)
 
-    print("\nPASS")
+    print("\n" + "=" * 70)
+    print("KERNEL PIPELINE TEST PASSED")
+    print("=" * 70)
 
+
+# ------------------------------------------------------------------
 
 if __name__ == "__main__":
+
     main()

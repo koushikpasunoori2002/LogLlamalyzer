@@ -1,7 +1,7 @@
 """
-test_syslog_parser.py
+test_dmesg_parser.py
 
-Integration test for the Syslog preprocessing pipeline.
+Integration test for the Dmesg log preprocessing pipeline.
 """
 
 from pathlib import Path
@@ -27,12 +27,12 @@ from backend.preprocessing.pipeline import PreprocessingPipeline
 # Dataset
 # ------------------------------------------------------------------
 
-SYSLOG = (
+DMESG_LOG = (
     PROJECT_ROOT
     / "dataset"
     / "raw"
-    / "syslog"
-    / "syslog"
+    / "dmesg"
+    / "dmesg.1.gz"
 )
 
 
@@ -43,7 +43,7 @@ SYSLOG = (
 def main():
 
     print("=" * 70)
-    print("SYSLOG PREPROCESSING PIPELINE TEST")
+    print("DMESG PREPROCESSING PIPELINE TEST")
     print("=" * 70)
 
     pipeline = PreprocessingPipeline()
@@ -52,7 +52,7 @@ def main():
     # Process File
     # --------------------------------------------------------------
 
-    info, records = pipeline.process_with_metadata(SYSLOG)
+    info, records = pipeline.process_with_metadata(DMESG_LOG)
 
     print(f"\nFilename        : {info.filename}")
     print(f"Log Type        : {info.log_type}")
@@ -116,7 +116,7 @@ def main():
         print("-" * 70)
 
     print("\n" + "=" * 70)
-    print("SYSLOG PIPELINE TEST PASSED")
+    print("DMESG PIPELINE TEST PASSED")
     print("=" * 70)
 
 

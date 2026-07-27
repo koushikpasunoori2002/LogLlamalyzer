@@ -1,21 +1,34 @@
 """
-Test LogRecord model.
+test_log_record.py
 
-Run:
-python backend/tests/preprocessing/test_log_record.py
+Tests the LogRecord model.
 """
 
 from pathlib import Path
 import sys
 
-# Add project root to Python path
+# ------------------------------------------------------------------
+# Project Root
+# ------------------------------------------------------------------
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-sys.path.append(str(PROJECT_ROOT))
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+# ------------------------------------------------------------------
+# Imports
+# ------------------------------------------------------------------
 
 from backend.preprocessing.models import LogRecord
 
 
+# ------------------------------------------------------------------
+# Main Test
+# ------------------------------------------------------------------
+
 def main():
+
     record = LogRecord(
         log_type="auth",
         source_file="auth.log",
@@ -29,12 +42,12 @@ def main():
         ip="192.168.1.10",
         port=22,
         protocol="ssh2",
-        message="Failed password for root from 192.168.1.10 port 22 ssh2"
+        message="Failed password for root from 192.168.1.10 port 22 ssh2",
     )
 
-    print("=" * 60)
+    print("=" * 70)
     print("LOG RECORD MODEL TEST")
-    print("=" * 60)
+    print("=" * 70)
 
     print("\nLogRecord Object")
     print(record)
@@ -42,8 +55,13 @@ def main():
     print("\nDictionary Representation")
     print(record.to_dict())
 
-    print("\nAll tests passed successfully.")
+    print("\n" + "=" * 70)
+    print("LOG RECORD MODEL TEST PASSED")
+    print("=" * 70)
 
+
+# ------------------------------------------------------------------
 
 if __name__ == "__main__":
+
     main()

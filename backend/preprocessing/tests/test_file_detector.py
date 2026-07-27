@@ -1,18 +1,30 @@
 """
-Run:
+test_file_detector.py
 
-python backend/preprocessing/detector/tests/test_file_detector.py
+Tests the FileDetector using sample log files.
 """
 
 from pathlib import Path
 import sys
 
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
-sys.path.append(str(PROJECT_ROOT))
+# ------------------------------------------------------------------
+# Project Root
+# ------------------------------------------------------------------
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+# ------------------------------------------------------------------
+# Imports
+# ------------------------------------------------------------------
 
 from backend.preprocessing.detector import FileDetector
 
-detector = FileDetector()
+# ------------------------------------------------------------------
+# Dataset
+# ------------------------------------------------------------------
 
 DATASET = PROJECT_ROOT / "dataset" / "raw"
 
@@ -26,22 +38,48 @@ FILES = [
     DATASET / "dmesg" / "dmesg.1.gz",
 ]
 
-print("=" * 60)
-print("PHASE 2 FILE DETECTOR TESTS")
-print("=" * 60)
+# ------------------------------------------------------------------
+# Main Test
+# ------------------------------------------------------------------
 
-for file in FILES:
+def main():
 
-    if not file.exists():
+    detector = FileDetector()
 
-        print(f"\nSKIPPED : {file.name}")
+    print("=" * 70)
+    print("FILE DETECTOR TEST")
+    print("=" * 70)
 
-        continue
+    for file in FILES:
 
-    info = detector.detect(file)
+        if not file.exists():
 
-    print("\nPASS")
+            print(f"\nSKIPPED : {file}")
 
-    print(info)
+            continue
 
-print("\nFinished.")
+        try:
+
+            info = detector.detect(file)
+
+            print("\n" + "=" * 70)
+            print(f"FILE : {file.name}")
+            print("=" * 70)
+
+            print(info)
+
+        except Exception as error:
+
+            print(f"\nFAILED : {file.name}")
+            print(error)
+
+    print("\n" + "=" * 70)
+    print("FILE DETECTOR TEST COMPLETED")
+    print("=" * 70)
+
+
+# ------------------------------------------------------------------
+
+if __name__ == "__main__":
+
+    main()
