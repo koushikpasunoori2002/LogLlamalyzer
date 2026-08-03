@@ -1,0 +1,9 @@
+{
+    "counter": 5,
+    "word_to_token": {
+        "failed": "TK0001",
+        "password": "TK0002",
+        "authentication": "TK0003",
+        "connection": "TK0004"
+    }
+}
