@@ -1,0 +1,17 @@
+[
+    {
+        "timestamp": "2026-08-03 12:00:00",
+        "severity": "HIGH",
+        "message": "Failed password attempt"
+    },
+    {
+        "timestamp": "2026-08-03 12:01:00",
+        "severity": "MEDIUM",
+        "message": "Connection established"
+    },
+    {
+        "timestamp": "2026-08-03 12:02:00",
+        "severity": "LOW",
+        "message": "Service started"
+    }
+]

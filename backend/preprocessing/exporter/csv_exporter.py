@@ -1,18 +1,17 @@
 """
-json_exporter.py
+csv_exporter.py
 
-Exports log records to JSON format.
+Exports log records to CSV format.
 """
 
-from pathlib import Path
-import json
+import csv
 
 from .base_exporter import BaseExporter
 
 
-class JSONExporter(BaseExporter):
+class CSVExporter(BaseExporter):
     """
-    Export records to JSON.
+    Export records to CSV format.
     """
 
     def __init__(self, output_path):
@@ -34,73 +33,87 @@ class JSONExporter(BaseExporter):
 
     def export(self, records):
         """
-        Export records to a JSON file.
-
-        Parameters
-        ----------
-        records : list
-            List of LogRecord objects.
-
-        Returns
-        -------
-        str
+        Export records to a CSV file.
         """
 
-        data = []
+        if not records:
 
-        for record in records:
+            with open(
+                self.output_path,
+                "w",
+                newline="",
+                encoding="utf-8",
+            ):
+                pass
 
-            data.append(
-                self._convert_record(record)
-            )
+            return str(self.output_path)
+
+        data = [
+            self._convert_record(record)
+            for record in records
+        ]
+
+        fieldnames = sorted(data[0].keys())
 
         with open(
             self.output_path,
             "w",
+            newline="",
             encoding="utf-8",
         ) as file:
 
-            json.dump(
-                data,
+            writer = csv.DictWriter(
                 file,
-                indent=4,
-                default=str,
+                fieldnames=fieldnames,
             )
+
+            writer.writeheader()
+
+            for row in data:
+                writer.writerow(row)
 
         return str(self.output_path)
 
     def read(self):
         """
-        Read exported JSON records.
+        Read the exported CSV file.
         """
 
         if not self.exists():
             return []
 
+        rows = []
+
         with open(
             self.output_path,
             "r",
+            newline="",
             encoding="utf-8",
         ) as file:
 
-            return json.load(file)
+            reader = csv.DictReader(file)
+
+            for row in reader:
+                rows.append(row)
+
+        return rows
 
     def clear(self):
         """
-        Remove all records from the file.
+        Remove all records.
         """
 
         with open(
             self.output_path,
             "w",
+            newline="",
             encoding="utf-8",
-        ) as file:
-
-            json.dump([], file)
+        ):
+            pass
 
     def count(self):
         """
-        Return the number of stored records.
+        Return the number of records.
         """
 
         return len(self.read())
@@ -108,6 +121,6 @@ class JSONExporter(BaseExporter):
     def __repr__(self):
 
         return (
-            f"JSONExporter("
+            f"CSVExporter("
             f"path='{self.output_path}')"
         )

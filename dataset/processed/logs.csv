@@ -1,0 +1,4 @@
+message,severity,timestamp
+Failed password attempt,HIGH,2026-08-03 12:00:00
+Connection established,MEDIUM,2026-08-03 12:01:00
+Service started,LOW,2026-08-03 12:02:00
