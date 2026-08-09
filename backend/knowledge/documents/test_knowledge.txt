@@ -1,0 +1,1 @@
+Repeated failed SSH authentication attempts from the same source may indicate a brute-force attack.
