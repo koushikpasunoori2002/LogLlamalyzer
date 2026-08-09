@@ -23,3 +23,6 @@ reader_state.json
 
 # Logs generated during testing
 *.tmp
+
+# ChromaDB test/runtime data
+data/
