@@ -2,9 +2,15 @@
 rag_analyzer.py
 
 Connects Phase 15 RAG context with the local LLM.
+
+Supports both:
+    1. Raw LLMResponse analysis
+    2. Structured SecurityAnalysis
 """
 
 from backend.rag.context import RAGContext
+
+from backend.llm.analysis import AnalysisParser
 
 from .llm_client import LLMClient
 from .prompt_builder import PromptBuilder
@@ -21,6 +27,7 @@ class RAGAnalyzer:
         self,
         llm_client=None,
         prompt_builder=None,
+        analysis_parser=None,
     ):
 
         self.llm_client = (
@@ -35,6 +42,12 @@ class RAGAnalyzer:
             else PromptBuilder()
         )
 
+        self.analysis_parser = (
+            analysis_parser
+            if analysis_parser is not None
+            else AnalysisParser()
+        )
+
     # ----------------------------------------------------------
     # Analyse RAG Context
     # ----------------------------------------------------------
@@ -42,6 +55,9 @@ class RAGAnalyzer:
     def analyze(self, context):
         """
         Generate an LLM security analysis from RAGContext.
+
+        Returns:
+            LLMResponse
         """
 
         if not isinstance(
@@ -84,6 +100,39 @@ class RAGAnalyzer:
         return response
 
     # ----------------------------------------------------------
+    # Structured Analysis
+    # ----------------------------------------------------------
+
+    def analyze_structured(self, context):
+        """
+        Generate an LLM security analysis and convert
+        it into a structured SecurityAnalysis object.
+        """
+
+        response = self.analyze(
+            context
+        )
+
+        analysis = self.analysis_parser.parse(
+            response
+        )
+
+        # Preserve useful RAG information.
+        analysis.metadata.update({
+            "query": context.query,
+            "model": response.model,
+            "rag": True,
+            "log_results": len(
+                context.log_results
+            ),
+            "knowledge_results": len(
+                context.knowledge_results
+            ),
+        })
+
+        return analysis
+
+    # ----------------------------------------------------------
     # Information
     # ----------------------------------------------------------
 
@@ -96,7 +145,12 @@ class RAGAnalyzer:
             "component": "RAGAnalyzer",
             "llm_client": self.llm_client.info(),
             "prompt_builder": self.prompt_builder.info(),
+            "analysis_parser": self.analysis_parser.info(),
         }
+
+    # ----------------------------------------------------------
+    # Representation
+    # ----------------------------------------------------------
 
     def __repr__(self):
 
@@ -104,4 +158,3 @@ class RAGAnalyzer:
             "RAGAnalyzer("
             f"model='{self.llm_client.model}')"
         )
-    
