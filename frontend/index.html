@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>LogLlamalyzer</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+</head>
+
+<body>
+
+    <main class="container">
+
+        <header class="header">
+
+            <h1>LogLlamalyzer</h1>
+
+            <p>
+                AI-Powered Security Log Analysis
+            </p>
+
+        </header>
+
+
+        <section class="query-section">
+
+            <label for="query">
+                Security Query
+            </label>
+
+            <textarea
+                id="query"
+                placeholder="Enter a security query..."
+                rows="5"
+            ></textarea>
+
+            <button
+                id="analyze-button"
+                type="button"
+            >
+                Analyse Security
+            </button>
+
+            <p
+                id="status"
+                class="status"
+            ></p>
+
+        </section>
+
+
+        <section class="result-section">
+
+            <h2>Security Analysis</h2>
+
+            <div
+                id="result"
+                class="result"
+            >
+                Analysis results will appear here.
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <script src="script.js"></script>
+
+</body>
+</html>

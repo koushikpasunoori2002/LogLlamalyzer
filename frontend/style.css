@@ -1,0 +1,478 @@
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --navy: #172b4d;
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+    --text: #172033;
+    --secondary: #64748b;
+    --border: #dbe2ea;
+    --background: #f4f7fb;
+    --white: #ffffff;
+}
+
+body {
+    margin: 0;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    background:
+        linear-gradient(
+            180deg,
+            #eef3f9 0,
+            #f7f9fc 300px,
+            #f4f7fb 100%
+        );
+
+    color: var(--text);
+}
+
+
+/* =========================================================
+   PAGE CONTAINER
+   ========================================================= */
+
+.container {
+    width: 92%;
+    max-width: 980px;
+
+    margin: 38px auto 60px;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.header {
+    position: relative;
+
+    padding: 27px 30px;
+
+    margin-bottom: 25px;
+
+    background: var(--navy);
+
+    border-radius: 12px;
+
+    color: white;
+
+    box-shadow:
+        0 5px 18px rgba(23, 43, 77, 0.16);
+
+    overflow: hidden;
+}
+
+
+/* subtle decorative element */
+
+.header::after {
+    content: "";
+
+    position: absolute;
+
+    width: 190px;
+    height: 190px;
+
+    right: -70px;
+    top: -100px;
+
+    border-radius: 50%;
+
+    border: 28px solid rgba(255, 255, 255, 0.05);
+}
+
+
+.header h1 {
+    position: relative;
+
+    margin: 0 0 6px;
+
+    font-size: 30px;
+
+    font-weight: 600;
+
+    letter-spacing: -0.4px;
+
+    z-index: 1;
+}
+
+
+.header p {
+    position: relative;
+
+    margin: 0;
+
+    color: #c8d4e5;
+
+    font-size: 14px;
+
+    z-index: 1;
+}
+
+
+/* =========================================================
+   CARDS
+   ========================================================= */
+
+.query-section,
+.result-section {
+
+    background: var(--white);
+
+    border:
+        1px solid
+        var(--border);
+
+    border-radius: 12px;
+
+    padding: 26px 28px;
+
+    margin-bottom: 22px;
+
+    box-shadow:
+        0 2px 7px
+        rgba(15, 23, 42, 0.05);
+}
+
+
+/* =========================================================
+   QUERY SECTION
+   ========================================================= */
+
+.query-section {
+    border-top:
+        3px solid
+        var(--blue);
+}
+
+
+label {
+    display: block;
+
+    margin-bottom: 10px;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    color: #25324a;
+}
+
+
+/* =========================================================
+   TEXTAREA
+   ========================================================= */
+
+textarea {
+
+    width: 100%;
+
+    min-height: 135px;
+
+    padding: 15px 16px;
+
+    resize: vertical;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    font-size: 15px;
+
+    line-height: 1.55;
+
+    color: var(--text);
+
+    background: #fbfcfe;
+
+    border:
+        1px solid
+        #cbd5e1;
+
+    border-radius: 9px;
+
+    outline: none;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+
+textarea:hover {
+    background: #ffffff;
+
+    border-color: #aebdce;
+}
+
+
+textarea:focus {
+
+    background: #ffffff;
+
+    border-color: var(--blue);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(37, 99, 235, 0.10);
+}
+
+
+textarea::placeholder {
+    color: #94a3b8;
+}
+
+
+/* =========================================================
+   BUTTON
+   ========================================================= */
+
+button {
+
+    margin-top: 15px;
+
+    padding: 11px 20px;
+
+    border: none;
+
+    border-radius: 7px;
+
+    background: var(--blue);
+
+    color: white;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 2px 5px
+        rgba(37, 99, 235, 0.22);
+
+    transition:
+        background 0.15s ease,
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+
+button:hover {
+
+    background: #1d4ed8;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 4px 10px
+        rgba(37, 99, 235, 0.25);
+}
+
+
+button:active {
+
+    transform: translateY(0);
+
+    box-shadow: none;
+}
+
+
+button:disabled {
+
+    cursor: not-allowed;
+
+    opacity: 0.55;
+
+    transform: none;
+
+    box-shadow: none;
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+.status {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    min-height: 20px;
+
+    margin-top: 13px;
+
+    font-size: 13px;
+
+    color: var(--secondary);
+}
+
+
+.status:not(:empty)::before {
+
+    content: "";
+
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: #16a34a;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(22, 163, 74, 0.10);
+}
+
+
+/* =========================================================
+   RESULT HEADER
+   ========================================================= */
+
+.result-section h2 {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin: 0 0 17px;
+
+    padding-bottom: 14px;
+
+    border-bottom:
+        1px solid
+        #e5eaf0;
+
+    font-size: 18px;
+
+    font-weight: 600;
+
+    color: #1e293b;
+}
+
+
+/* =========================================================
+   RESULT BOX
+   ========================================================= */
+
+.result {
+
+    min-height: 170px;
+
+    padding: 19px;
+
+    white-space: pre-wrap;
+
+    line-height: 1.65;
+
+    font-size: 14px;
+
+    color: #334155;
+
+    background:
+        #f8fafc;
+
+    border:
+        1px solid
+        #e2e8f0;
+
+    border-radius: 9px;
+}
+
+
+/* =========================================================
+   RESULT BOX WHEN CONTENT EXISTS
+   ========================================================= */
+
+.result:not(:empty) {
+
+    background:
+        linear-gradient(
+            135deg,
+            #f8fbff,
+            #f5f8fc
+        );
+}
+
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #eef2f7;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #b8c3d1;
+
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+
+/* =========================================================
+   TEXT SELECTION
+   ========================================================= */
+
+::selection {
+    background: #dbeafe;
+
+    color: #172033;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+    body {
+        background: #f4f7fb;
+    }
+
+    .container {
+        width: 94%;
+
+        margin-top: 22px;
+    }
+
+    .header {
+        padding: 23px 20px;
+    }
+
+    .header h1 {
+        font-size: 27px;
+    }
+
+    .query-section,
+    .result-section {
+        padding: 21px;
+    }
+
+    button {
+        width: 100%;
+    }
+}
