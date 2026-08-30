@@ -13,9 +13,14 @@ class Retriever:
     Retrieves relevant documents using embeddings
     and ChromaDB similarity search.
 
-    An optional distance threshold can be used to
-    reject results that are considered too distant
-    from the query.
+    Supports:
+
+    - configurable top_k
+    - optional source filtering
+    - optional distance-threshold filtering
+    - document retrieval
+    - metadata retrieval
+    - scored retrieval
     """
 
     def __init__(
@@ -37,13 +42,13 @@ class Retriever:
             Manager responsible for generating embeddings.
 
         top_k : int
-            Number of results to retrieve.
+            Default number of results to retrieve.
 
         distance_threshold : float, optional
             Maximum allowed ChromaDB distance.
 
             Results with a distance greater than this
-            value are removed.
+            value are removed after retrieval.
 
             If None, no distance filtering is applied.
         """
@@ -68,7 +73,7 @@ class Retriever:
         self.top_k = top_k
 
         # ----------------------------------------------------------
-        # Optional retrieval distance threshold
+        # Optional distance threshold
         # ----------------------------------------------------------
 
         if distance_threshold is not None:
@@ -79,9 +84,11 @@ class Retriever:
                     "greater than or equal to 0."
                 )
 
-        self.distance_threshold = (
-            distance_threshold
-        )
+        self.distance_threshold = distance_threshold
+
+    # ------------------------------------------------------------------
+    # Main retrieval
+    # ------------------------------------------------------------------
 
     def retrieve(
         self,
@@ -101,8 +108,8 @@ class Retriever:
             Number of results to retrieve.
 
         source : str, optional
-            Synchronized source identifier used to
-            restrict retrieval to a specific source.
+            Source identifier used to restrict retrieval
+            to a specific synchronized log source.
 
         Returns
         -------
@@ -111,16 +118,25 @@ class Retriever:
 
         Notes
         -----
-        If distance_threshold is configured, results
-        with distances greater than the threshold are
-        removed after ChromaDB retrieval.
+        Source filtering uses the ``source`` metadata field.
+
+        If distance_threshold is configured, results whose
+        distance exceeds the threshold are removed after
+        ChromaDB retrieval.
         """
 
-        if not query or not str(query).strip():
+        # ----------------------------------------------------------
+        # Validate query
+        # ----------------------------------------------------------
 
+        if not query or not str(query).strip():
             raise ValueError(
                 "Query cannot be empty."
             )
+
+        # ----------------------------------------------------------
+        # Determine number of results
+        # ----------------------------------------------------------
 
         number_of_results = (
             top_k
@@ -129,10 +145,13 @@ class Retriever:
         )
 
         if number_of_results <= 0:
-
             raise ValueError(
                 "top_k must be greater than 0."
             )
+
+        # ----------------------------------------------------------
+        # Generate query embedding
+        # ----------------------------------------------------------
 
         query_embedding = (
             self.embedding_manager.embed_text(
@@ -142,15 +161,29 @@ class Retriever:
 
         # ----------------------------------------------------------
         # Optional source-aware filtering
+        #
+        # The project metadata schema stores the synchronized
+        # source identifier under the ``source`` field.
         # ----------------------------------------------------------
 
         where = None
 
         if source is not None:
 
+            source_value = str(source).strip()
+
+            if not source_value:
+                raise ValueError(
+                    "source cannot be empty."
+                )
+
             where = {
-                "synchronized_source": str(source)
+                "source": source_value
             }
+
+        # ----------------------------------------------------------
+        # Search vector database
+        # ----------------------------------------------------------
 
         results = self.database.search(
             query_embedding=query_embedding,
@@ -159,30 +192,37 @@ class Retriever:
         )
 
         # ----------------------------------------------------------
-        # Optional distance filtering
+        # Apply optional distance filtering
         # ----------------------------------------------------------
 
         if self.distance_threshold is None:
-
             return results
 
         return self._apply_distance_threshold(
             results
         )
 
+    # ------------------------------------------------------------------
+    # Distance threshold
+    # ------------------------------------------------------------------
+
     def _apply_distance_threshold(
         self,
         results,
     ):
         """
-        Remove retrieved results whose distance
-        exceeds the configured threshold.
+        Remove retrieved results whose distance exceeds
+        the configured distance threshold.
 
-        ChromaDB returns query results as lists
-        because multiple queries can be executed
-        at once. The retriever currently processes
-        one query at a time.
+        ChromaDB returns query results as lists because
+        multiple queries can be executed at once.
+
+        The Retriever currently processes one query at
+        a time.
         """
+
+        if not results:
+            return results
 
         distances = results.get(
             "distances",
@@ -190,16 +230,26 @@ class Retriever:
         )
 
         if not distances:
-
             return results
 
-        filtered_results = dict(results)
+        if not isinstance(distances, list):
+            return results
+
+        if len(distances) == 0:
+            return results
 
         # ----------------------------------------------------------
-        # Process the first query result set
+        # First query result set
         # ----------------------------------------------------------
 
         query_distances = distances[0]
+
+        if not isinstance(query_distances, list):
+            return results
+
+        # ----------------------------------------------------------
+        # Determine which results remain
+        # ----------------------------------------------------------
 
         keep_indices = [
             index
@@ -210,8 +260,14 @@ class Retriever:
         ]
 
         # ----------------------------------------------------------
-        # Filter result fields that contain
-        # one entry per retrieved document.
+        # Copy original result structure
+        # ----------------------------------------------------------
+
+        filtered_results = dict(results)
+
+        # ----------------------------------------------------------
+        # Filter fields containing one entry per
+        # retrieved document.
         # ----------------------------------------------------------
 
         fields_to_filter = [
@@ -231,14 +287,21 @@ class Retriever:
             if values is None:
                 continue
 
-            # Query-result fields normally contain
-            # one list per query.
+            if not isinstance(values, list):
+                continue
 
-            if (
-                isinstance(values, list)
-                and len(values) > 0
-                and isinstance(values[0], list)
-            ):
+            if len(values) == 0:
+                continue
+
+            # ------------------------------------------------------
+            # Standard ChromaDB structure:
+            #
+            # [
+            #     [result1, result2, result3]
+            # ]
+            # ------------------------------------------------------
+
+            if isinstance(values[0], list):
 
                 filtered_results[field] = [
                     [
@@ -249,6 +312,10 @@ class Retriever:
 
         return filtered_results
 
+    # ------------------------------------------------------------------
+    # Document retrieval
+    # ------------------------------------------------------------------
+
     def retrieve_documents(
         self,
         query,
@@ -256,7 +323,7 @@ class Retriever:
         source=None,
     ):
         """
-        Retrieve only the documents from a query.
+        Retrieve only document text.
 
         Parameters
         ----------
@@ -264,10 +331,10 @@ class Retriever:
             User search query.
 
         top_k : int, optional
-            Number of results to return.
+            Number of results.
 
         source : str, optional
-            Synchronized source identifier.
+            Source identifier used to restrict retrieval.
 
         Returns
         -------
@@ -289,7 +356,17 @@ class Retriever:
         if not documents:
             return []
 
+        if not isinstance(documents, list):
+            return []
+
+        if not isinstance(documents[0], list):
+            return []
+
         return documents[0]
+
+    # ------------------------------------------------------------------
+    # Metadata retrieval
+    # ------------------------------------------------------------------
 
     def retrieve_metadata(
         self,
@@ -306,10 +383,15 @@ class Retriever:
             User search query.
 
         top_k : int, optional
-            Number of results to return.
+            Number of results.
 
         source : str, optional
-            Synchronized source identifier.
+            Source identifier used to restrict retrieval.
+
+        Returns
+        -------
+        list
+            Metadata dictionaries.
         """
 
         results = self.retrieve(
@@ -326,7 +408,17 @@ class Retriever:
         if not metadata:
             return []
 
+        if not isinstance(metadata, list):
+            return []
+
+        if not isinstance(metadata[0], list):
+            return []
+
         return metadata[0]
+
+    # ------------------------------------------------------------------
+    # Retrieval with scores
+    # ------------------------------------------------------------------
 
     def retrieve_with_scores(
         self,
@@ -335,8 +427,8 @@ class Retriever:
         source=None,
     ):
         """
-        Return documents together with similarity
-        distances.
+        Return retrieved documents together with their
+        ChromaDB distances.
 
         Parameters
         ----------
@@ -344,10 +436,20 @@ class Retriever:
             User search query.
 
         top_k : int, optional
-            Number of results to return.
+            Number of results.
 
         source : str, optional
-            Synchronized source identifier.
+            Source identifier used to restrict retrieval.
+
+        Returns
+        -------
+        list of dict
+            Each item contains:
+
+            {
+                "document": "...",
+                "distance": float
+            }
         """
 
         results = self.retrieve(
@@ -369,9 +471,19 @@ class Retriever:
         if not documents:
             return []
 
+        if not isinstance(documents, list):
+            return []
+
+        if not isinstance(documents[0], list):
+            return []
+
         documents = documents[0]
 
-        if distances:
+        if (
+            isinstance(distances, list)
+            and len(distances) > 0
+            and isinstance(distances[0], list)
+        ):
             distances = distances[0]
         else:
             distances = []
@@ -397,17 +509,25 @@ class Retriever:
 
         return output
 
+    # ------------------------------------------------------------------
+    # Database count
+    # ------------------------------------------------------------------
+
     def count(self):
         """
-        Return the number of records
-        currently stored in the database.
+        Return the number of records currently stored
+        in the vector database.
         """
 
         return self.database.count()
 
+    # ------------------------------------------------------------------
+    # Retriever information
+    # ------------------------------------------------------------------
+
     def info(self):
         """
-        Return retriever information.
+        Return information about the Retriever.
         """
 
         return {
@@ -418,17 +538,24 @@ class Retriever:
             ),
             "database": self.database.info(),
             "embedding_model": (
-                self.embedding_manager
-                .model_information()
+                self.embedding_manager.model_information()
             ),
         }
 
+    # ------------------------------------------------------------------
+    # Close
+    # ------------------------------------------------------------------
+
     def close(self):
         """
-        Close the database.
+        Close the underlying database.
         """
 
         self.database.close()
+
+    # ------------------------------------------------------------------
+    # Representation
+    # ------------------------------------------------------------------
 
     def __repr__(self):
 
