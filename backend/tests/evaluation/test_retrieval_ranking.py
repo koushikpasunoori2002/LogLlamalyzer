@@ -1,16 +1,8 @@
 """
-Retrieval quality evaluation tests.
+Retrieval ranking quality evaluation.
 
-Quantitative evaluation of RAG retrieval quality.
-
-Metrics:
-    - Precision@K
-    - Recall@K
-    - Hit Rate@K
-    - Mean Reciprocal Rank (MRR)
-
-The evaluation uses representative security scenarios and
-a controlled set of relevant and non-relevant documents.
+Evaluates the ranking position of relevant documents
+returned by the retriever for representative security scenarios.
 """
 
 from pathlib import Path
@@ -38,111 +30,6 @@ from backend.llm.embeddings import EmbeddingManager
 
 
 # ------------------------------------------------------------------
-# Evaluation configuration
-# ------------------------------------------------------------------
-
-TOP_K = 3
-
-
-# ------------------------------------------------------------------
-# Metric functions
-# ------------------------------------------------------------------
-
-def precision_at_k(retrieved, relevant, k):
-    """
-    Calculate Precision@K.
-
-    Precision@K measures the proportion of the top-K retrieved
-    documents that are relevant.
-
-    Formula:
-        Precision@K = relevant retrieved documents / K
-    """
-
-    retrieved_at_k = retrieved[:k]
-
-    if not retrieved_at_k:
-        return 0.0
-
-    relevant_count = sum(
-        1
-        for item in retrieved_at_k
-        if item in relevant
-    )
-
-    return relevant_count / len(retrieved_at_k)
-
-
-def recall_at_k(retrieved, relevant, k):
-    """
-    Calculate Recall@K.
-
-    Recall@K measures the proportion of all known relevant
-    documents that were retrieved in the top-K results.
-
-    Formula:
-        Recall@K =
-            relevant retrieved documents /
-            total relevant documents
-    """
-
-    if not relevant:
-        return 0.0
-
-    retrieved_at_k = retrieved[:k]
-
-    relevant_count = sum(
-        1
-        for item in retrieved_at_k
-        if item in relevant
-    )
-
-    return relevant_count / len(relevant)
-
-
-def hit_rate_at_k(retrieved, relevant, k):
-    """
-    Calculate Hit Rate@K.
-
-    Returns 1.0 if at least one relevant document appears
-    within the top-K results, otherwise 0.0.
-    """
-
-    retrieved_at_k = retrieved[:k]
-
-    for item in retrieved_at_k:
-
-        if item in relevant:
-            return 1.0
-
-    return 0.0
-
-
-def reciprocal_rank(retrieved, relevant):
-    """
-    Calculate Reciprocal Rank.
-
-    Reciprocal Rank is the inverse of the rank position of
-    the first relevant retrieved document.
-
-    Example:
-        First relevant result at rank 1 -> 1.0
-        First relevant result at rank 2 -> 0.5
-        First relevant result at rank 3 -> 0.3333
-
-    If no relevant document is retrieved:
-        0.0
-    """
-
-    for index, item in enumerate(retrieved, start=1):
-
-        if item in relevant:
-            return 1.0 / index
-
-    return 0.0
-
-
-# ------------------------------------------------------------------
 # Main evaluation
 # ------------------------------------------------------------------
 
@@ -151,16 +38,16 @@ def main():
     database_path = (
         PROJECT_ROOT
         / "data"
-        / "retrieval_quality_test"
+        / "retrieval_ranking_test"
     )
 
     # --------------------------------------------------------------
-    # Create test database
+    # Create database
     # --------------------------------------------------------------
 
     database = ChromaDatabase(
         persist_directory=database_path,
-        collection_name="retrieval_quality_test",
+        collection_name="retrieval_ranking_test",
     )
 
     embedding_manager = EmbeddingManager()
@@ -168,22 +55,22 @@ def main():
     retriever = Retriever(
         database=database,
         embedding_manager=embedding_manager,
-        top_k=TOP_K,
+        top_k=3,
     )
 
-    print("=" * 60)
-    print("RETRIEVAL QUALITY EVALUATION - PHASE 37.1")
-    print("=" * 60)
+    print("=" * 70)
+    print("RETRIEVAL RANKING QUALITY EVALUATION")
+    print("=" * 70)
 
-    print(
-        f"\nEvaluation metric cutoff: K={TOP_K}"
-    )
+    print("\nEvaluation cutoff: K=3")
 
     # --------------------------------------------------------------
     # Clear previous records
     # --------------------------------------------------------------
 
     database.clear()
+
+    print("\nDatabase cleared.")
 
     # --------------------------------------------------------------
     # Test documents
@@ -234,16 +121,16 @@ def main():
     ]
 
     ids = [
-        "retrieval_001",
-        "retrieval_002",
-        "retrieval_003",
-        "retrieval_004",
-        "retrieval_005",
-        "retrieval_006",
-        "retrieval_007",
-        "retrieval_008",
-        "retrieval_009",
-        "retrieval_010",
+        "ranking_001",
+        "ranking_002",
+        "ranking_003",
+        "ranking_004",
+        "ranking_005",
+        "ranking_006",
+        "ranking_007",
+        "ranking_008",
+        "ranking_009",
+        "ranking_010",
     ]
 
     metadatas = [
@@ -331,6 +218,8 @@ def main():
             "Expected all test records to be stored."
         )
 
+    print("Database Insert Test: PASS")
+
     # --------------------------------------------------------------
     # Evaluation scenarios
     # --------------------------------------------------------------
@@ -360,10 +249,7 @@ def main():
         },
         {
             "name": "Network scanning",
-            "query": (
-                "possible network scanning and suspicious "
-                "connections"
-            ),
+            "query": "possible network scanning and suspicious connections",
             "expected": [
                 "network_scanning",
             ],
@@ -382,91 +268,186 @@ def main():
     # Metric accumulators
     # --------------------------------------------------------------
 
-    precision_scores = []
-    recall_scores = []
-    hit_rate_scores = []
-    reciprocal_rank_scores = []
-
     passed_count = 0
+
+    precision_at_1_values = []
+    precision_at_3_values = []
+    recall_at_3_values = []
+    reciprocal_rank_values = []
+    relevant_rank_values = []
 
     # --------------------------------------------------------------
     # Run evaluation
     # --------------------------------------------------------------
 
-    print("\nRunning retrieval scenarios...\n")
+    print("\nRunning ranking analysis...\n")
 
     for scenario in scenarios:
 
         results = retriever.retrieve(
             query=scenario["query"],
-            top_k=TOP_K,
+            top_k=3,
         )
 
-        retrieved_metadata = results.get(
+        metadata_groups = results.get(
             "metadatas",
             [],
         )
 
-        if not retrieved_metadata:
+        distance_groups = results.get(
+            "distances",
+            [],
+        )
+
+        if not metadata_groups:
 
             print(
                 f"FAIL: {scenario['name']}"
             )
 
-            precision_scores.append(0.0)
-            recall_scores.append(0.0)
-            hit_rate_scores.append(0.0)
-            reciprocal_rank_scores.append(0.0)
+            precision_at_1_values.append(0.0)
+            precision_at_3_values.append(0.0)
+            recall_at_3_values.append(0.0)
+            reciprocal_rank_values.append(0.0)
 
             continue
 
-        metadata_list = retrieved_metadata[0]
+        metadata_list = metadata_groups[0]
+
+        distances = (
+            distance_groups[0]
+            if distance_groups
+            else []
+        )
 
         retrieved_scenarios = [
             metadata.get("scenario")
             for metadata in metadata_list
         ]
 
-        expected_scenarios = set(
-            scenario["expected"]
-        )
+        expected = scenario["expected"]
 
-        precision = precision_at_k(
+        # ----------------------------------------------------------
+        # Identify relevant results
+        # ----------------------------------------------------------
+
+        relevant_positions = []
+
+        for index, retrieved_scenario in enumerate(
             retrieved_scenarios,
-            expected_scenarios,
-            TOP_K,
-        )
+            start=1,
+        ):
 
-        recall = recall_at_k(
-            retrieved_scenarios,
-            expected_scenarios,
-            TOP_K,
-        )
+            if retrieved_scenario in expected:
+                relevant_positions.append(index)
 
-        hit_rate = hit_rate_at_k(
-            retrieved_scenarios,
-            expected_scenarios,
-            TOP_K,
-        )
+        # ----------------------------------------------------------
+        # Precision@1
+        # ----------------------------------------------------------
 
-        rr = reciprocal_rank(
-            retrieved_scenarios,
-            expected_scenarios,
-        )
+        if retrieved_scenarios:
 
-        precision_scores.append(precision)
-        recall_scores.append(recall)
-        hit_rate_scores.append(hit_rate)
-        reciprocal_rank_scores.append(rr)
+            precision_at_1 = (
+                1.0
+                if retrieved_scenarios[0] in expected
+                else 0.0
+            )
 
-        if hit_rate == 1.0:
-            passed_count += 1
-            status = "PASS"
         else:
-            status = "FAIL"
+
+            precision_at_1 = 0.0
+
+        # ----------------------------------------------------------
+        # Precision@3
+        # ----------------------------------------------------------
+
+        relevant_count = len(relevant_positions)
+
+        precision_at_3 = (
+            relevant_count / len(retrieved_scenarios)
+            if retrieved_scenarios
+            else 0.0
+        )
+
+        # ----------------------------------------------------------
+        # Recall@3
+        # ----------------------------------------------------------
+
+        recall_at_3 = (
+            relevant_count / len(expected)
+            if expected
+            else 0.0
+        )
+
+        # Cap recall at 1.0 because multiple retrieved
+        # results can correspond to the same expected scenario.
+        recall_at_3 = min(
+            recall_at_3,
+            1.0,
+        )
+
+        # ----------------------------------------------------------
+        # Reciprocal Rank
+        # ----------------------------------------------------------
+
+        if relevant_positions:
+
+            first_relevant_rank = (
+                relevant_positions[0]
+            )
+
+            reciprocal_rank = (
+                1.0 / first_relevant_rank
+            )
+
+            relevant_rank_values.append(
+                first_relevant_rank
+            )
+
+        else:
+
+            reciprocal_rank = 0.0
+
+        # ----------------------------------------------------------
+        # Store metrics
+        # ----------------------------------------------------------
+
+        precision_at_1_values.append(
+            precision_at_1
+        )
+
+        precision_at_3_values.append(
+            precision_at_3
+        )
+
+        recall_at_3_values.append(
+            recall_at_3
+        )
+
+        reciprocal_rank_values.append(
+            reciprocal_rank
+        )
+
+        # ----------------------------------------------------------
+        # Scenario result
+        # ----------------------------------------------------------
+
+        if relevant_positions:
+
+            passed_count += 1
+
+            print(
+                f"PASS: {scenario['name']}"
+            )
+
+        else:
+
+            print(
+                f"FAIL: {scenario['name']}"
+            )
 
         print(
-            f"{status}: {scenario['name']}"
+            f"  Query: {scenario['query']}"
         )
 
         print(
@@ -474,69 +455,88 @@ def main():
         )
 
         print(
-            f"  Expected:  "
-            f"{list(expected_scenarios)}"
+            f"  Expected:   {expected}"
         )
 
         print(
-            f"  Precision@{TOP_K}: "
-            f"{precision:.3f}"
+            f"  Relevant ranks: "
+            f"{relevant_positions}"
+        )
+
+        if distances:
+
+            formatted_distances = [
+                f"{distance:.6f}"
+                for distance in distances
+            ]
+
+            print(
+                f"  Distances: {formatted_distances}"
+            )
+
+        print(
+            f"  Precision@1: {precision_at_1:.3f}"
         )
 
         print(
-            f"  Recall@{TOP_K}:    "
-            f"{recall:.3f}"
+            f"  Precision@3: {precision_at_3:.3f}"
         )
 
         print(
-            f"  Hit Rate@{TOP_K}:   "
-            f"{hit_rate:.3f}"
+            f"  Recall@3:    {recall_at_3:.3f}"
         )
 
         print(
-            f"  Reciprocal Rank:  "
-            f"{rr:.3f}"
+            f"  Reciprocal Rank: "
+            f"{reciprocal_rank:.3f}"
         )
 
         print()
 
     # --------------------------------------------------------------
-    # Calculate overall metrics
+    # Aggregate metrics
     # --------------------------------------------------------------
 
     total = len(scenarios)
 
-    average_precision = (
-        sum(precision_scores) / total
+    mean_precision_at_1 = (
+        sum(precision_at_1_values) / total
         if total > 0
         else 0.0
     )
 
-    average_recall = (
-        sum(recall_scores) / total
+    mean_precision_at_3 = (
+        sum(precision_at_3_values) / total
         if total > 0
         else 0.0
     )
 
-    average_hit_rate = (
-        sum(hit_rate_scores) / total
+    mean_recall_at_3 = (
+        sum(recall_at_3_values) / total
         if total > 0
         else 0.0
     )
 
     mean_reciprocal_rank = (
-        sum(reciprocal_rank_scores) / total
+        sum(reciprocal_rank_values) / total
         if total > 0
         else 0.0
     )
 
+    mean_relevant_rank = (
+        sum(relevant_rank_values)
+        / len(relevant_rank_values)
+        if relevant_rank_values
+        else 0.0
+    )
+
     # --------------------------------------------------------------
-    # Display overall results
+    # Print summary
     # --------------------------------------------------------------
 
-    print("=" * 60)
-    print("QUANTITATIVE RETRIEVAL RESULTS")
-    print("=" * 60)
+    print("=" * 70)
+    print("RETRIEVAL RANKING RESULTS")
+    print("=" * 70)
 
     print(
         f"Scenarios Passed: "
@@ -544,18 +544,18 @@ def main():
     )
 
     print(
-        f"Hit Rate@{TOP_K}: "
-        f"{average_hit_rate * 100:.1f}%"
+        f"Precision@1: "
+        f"{mean_precision_at_1 * 100:.1f}%"
     )
 
     print(
-        f"Mean Precision@{TOP_K}: "
-        f"{average_precision * 100:.1f}%"
+        f"Mean Precision@3: "
+        f"{mean_precision_at_3 * 100:.1f}%"
     )
 
     print(
-        f"Mean Recall@{TOP_K}: "
-        f"{average_recall * 100:.1f}%"
+        f"Mean Recall@3: "
+        f"{mean_recall_at_3 * 100:.1f}%"
     )
 
     print(
@@ -563,7 +563,12 @@ def main():
         f"{mean_reciprocal_rank:.3f}"
     )
 
-    print("=" * 60)
+    print(
+        f"Mean First Relevant Rank: "
+        f"{mean_relevant_rank:.2f}"
+    )
+
+    print("=" * 70)
 
     # --------------------------------------------------------------
     # Evaluation status
@@ -572,16 +577,24 @@ def main():
     if passed_count == total:
 
         print(
-            "RETRIEVAL QUALITY EVALUATION PASSED"
+            "RETRIEVAL RANKING EVALUATION PASSED"
         )
 
     else:
 
         print(
-            "RETRIEVAL QUALITY EVALUATION FAILED"
+            "RETRIEVAL RANKING EVALUATION FAILED"
         )
 
-    print("=" * 60)
+        try:
+            retriever.close()
+        except Exception:
+            pass
+
+        raise AssertionError(
+            "One or more retrieval scenarios "
+            "failed ranking evaluation."
+        )
 
     # --------------------------------------------------------------
     # Cleanup
@@ -614,17 +627,7 @@ def main():
             "(files still locked by ChromaDB)"
         )
 
-    print("=" * 60)
-
-    # --------------------------------------------------------------
-    # Fail the evaluation if scenarios failed
-    # --------------------------------------------------------------
-
-    if passed_count != total:
-
-        raise AssertionError(
-            "One or more retrieval scenarios failed."
-        )
+    print("=" * 70)
 
 
 # ------------------------------------------------------------------

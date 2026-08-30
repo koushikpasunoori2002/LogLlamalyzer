@@ -12,6 +12,10 @@ class Retriever:
     """
     Retrieves relevant documents using embeddings
     and ChromaDB similarity search.
+
+    An optional distance threshold can be used to
+    reject results that are considered too distant
+    from the query.
     """
 
     def __init__(
@@ -19,6 +23,7 @@ class Retriever:
         database=None,
         embedding_manager=None,
         top_k=5,
+        distance_threshold=None,
     ):
         """
         Initialize the retriever.
@@ -33,6 +38,14 @@ class Retriever:
 
         top_k : int
             Number of results to retrieve.
+
+        distance_threshold : float, optional
+            Maximum allowed ChromaDB distance.
+
+            Results with a distance greater than this
+            value are removed.
+
+            If None, no distance filtering is applied.
         """
 
         self.database = (
@@ -54,6 +67,22 @@ class Retriever:
 
         self.top_k = top_k
 
+        # ----------------------------------------------------------
+        # Optional retrieval distance threshold
+        # ----------------------------------------------------------
+
+        if distance_threshold is not None:
+
+            if distance_threshold < 0:
+                raise ValueError(
+                    "distance_threshold must be "
+                    "greater than or equal to 0."
+                )
+
+        self.distance_threshold = (
+            distance_threshold
+        )
+
     def retrieve(
         self,
         query,
@@ -69,7 +98,7 @@ class Retriever:
             User search query.
 
         top_k : int, optional
-            Number of results to return.
+            Number of results to retrieve.
 
         source : str, optional
             Synchronized source identifier used to
@@ -79,6 +108,12 @@ class Retriever:
         -------
         dict
             ChromaDB search results.
+
+        Notes
+        -----
+        If distance_threshold is configured, results
+        with distances greater than the threshold are
+        removed after ChromaDB retrieval.
         """
 
         if not query or not str(query).strip():
@@ -105,9 +140,9 @@ class Retriever:
             )
         )
 
-        # ------------------------------------------------------
+        # ----------------------------------------------------------
         # Optional source-aware filtering
-        # ------------------------------------------------------
+        # ----------------------------------------------------------
 
         where = None
 
@@ -117,11 +152,102 @@ class Retriever:
                 "synchronized_source": str(source)
             }
 
-        return self.database.search(
+        results = self.database.search(
             query_embedding=query_embedding,
             n_results=number_of_results,
             where=where,
         )
+
+        # ----------------------------------------------------------
+        # Optional distance filtering
+        # ----------------------------------------------------------
+
+        if self.distance_threshold is None:
+
+            return results
+
+        return self._apply_distance_threshold(
+            results
+        )
+
+    def _apply_distance_threshold(
+        self,
+        results,
+    ):
+        """
+        Remove retrieved results whose distance
+        exceeds the configured threshold.
+
+        ChromaDB returns query results as lists
+        because multiple queries can be executed
+        at once. The retriever currently processes
+        one query at a time.
+        """
+
+        distances = results.get(
+            "distances",
+            [],
+        )
+
+        if not distances:
+
+            return results
+
+        filtered_results = dict(results)
+
+        # ----------------------------------------------------------
+        # Process the first query result set
+        # ----------------------------------------------------------
+
+        query_distances = distances[0]
+
+        keep_indices = [
+            index
+            for index, distance in enumerate(
+                query_distances
+            )
+            if distance <= self.distance_threshold
+        ]
+
+        # ----------------------------------------------------------
+        # Filter result fields that contain
+        # one entry per retrieved document.
+        # ----------------------------------------------------------
+
+        fields_to_filter = [
+            "ids",
+            "documents",
+            "metadatas",
+            "distances",
+            "embeddings",
+            "uris",
+            "data",
+        ]
+
+        for field in fields_to_filter:
+
+            values = results.get(field)
+
+            if values is None:
+                continue
+
+            # Query-result fields normally contain
+            # one list per query.
+
+            if (
+                isinstance(values, list)
+                and len(values) > 0
+                and isinstance(values[0], list)
+            ):
+
+                filtered_results[field] = [
+                    [
+                        values[0][index]
+                        for index in keep_indices
+                    ]
+                ]
+
+        return filtered_results
 
     def retrieve_documents(
         self,
@@ -287,6 +413,9 @@ class Retriever:
         return {
             "component": "Retriever",
             "top_k": self.top_k,
+            "distance_threshold": (
+                self.distance_threshold
+            ),
             "database": self.database.info(),
             "embedding_model": (
                 self.embedding_manager
@@ -306,5 +435,7 @@ class Retriever:
         return (
             f"Retriever("
             f"top_k={self.top_k}, "
+            f"distance_threshold="
+            f"{self.distance_threshold}, "
             f"records={self.count()})"
         )
