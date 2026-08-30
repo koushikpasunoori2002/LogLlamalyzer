@@ -444,6 +444,148 @@ button:disabled {
 
 
 /* =========================================================
+   SOURCE SELECTOR
+   ========================================================= */
+
+.source-label {
+    margin-top: 18px;
+}
+
+
+select {
+
+    width: 100%;
+
+    padding: 13px 14px;
+
+    margin-top: 0;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    font-size: 14px;
+
+    color: var(--text);
+
+    background: #fbfcfe;
+
+    border:
+        1px solid
+        #cbd5e1;
+
+    border-radius: 9px;
+
+    outline: none;
+
+    cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+
+select:hover {
+
+    background: #ffffff;
+
+    border-color: #aebdce;
+}
+
+
+select:focus {
+
+    background: #ffffff;
+
+    border-color: var(--blue);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(37, 99, 235, 0.10);
+}
+
+
+/* =========================================================
+   RESULT METADATA
+   ========================================================= */
+
+.result-metadata {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 12px;
+
+    margin-bottom: 15px;
+}
+
+
+.metadata-item {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 5px;
+
+    padding: 12px 14px;
+
+    background: #f8fafc;
+
+    border:
+        1px solid
+        #e2e8f0;
+
+    border-radius: 8px;
+}
+
+
+.metadata-label {
+
+    font-size: 11px;
+
+    font-weight: 600;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.4px;
+
+    color: var(--secondary);
+}
+
+
+.metadata-value {
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    color: #1e293b;
+
+    word-break: break-word;
+}
+
+
+/* =========================================================
+   RESPONSIVE METADATA
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+    .result-metadata {
+
+        grid-template-columns:
+            1fr;
+
+    }
+
+}
+/* =========================================================
    RESPONSIVE
    ========================================================= */
 

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
     <meta charset="UTF-8">
 
     <meta
@@ -14,6 +15,7 @@
         rel="stylesheet"
         href="style.css"
     >
+
 </head>
 
 <body>
@@ -43,12 +45,44 @@
                 rows="5"
             ></textarea>
 
+
+            <label
+                for="source"
+                class="source-label"
+            >
+                Log Source
+            </label>
+
+            <select
+                id="source"
+            >
+
+                <option value="">
+                    All synchronized sources
+                </option>
+
+                <option value="server-a">
+                    server-a
+                </option>
+
+                <option value="server-b">
+                    server-b
+                </option>
+
+                <option value="server-c">
+                    server-c
+                </option>
+
+            </select>
+
+
             <button
                 id="analyze-button"
                 type="button"
             >
                 Analyse Security
             </button>
+
 
             <p
                 id="status"
@@ -60,7 +94,65 @@
 
         <section class="result-section">
 
-            <h2>Security Analysis</h2>
+            <h2>
+                Security Analysis
+            </h2>
+
+
+            <div
+                id="result-metadata"
+                class="result-metadata"
+            >
+
+                <div class="metadata-item">
+
+                    <span class="metadata-label">
+                        Source
+                    </span>
+
+                    <span
+                        id="metadata-source"
+                        class="metadata-value"
+                    >
+                        All sources
+                    </span>
+
+                </div>
+
+
+                <div class="metadata-item">
+
+                    <span class="metadata-label">
+                        Log Evidence
+                    </span>
+
+                    <span
+                        id="metadata-logs"
+                        class="metadata-value"
+                    >
+                        0
+                    </span>
+
+                </div>
+
+
+                <div class="metadata-item">
+
+                    <span class="metadata-label">
+                        Knowledge Evidence
+                    </span>
+
+                    <span
+                        id="metadata-knowledge"
+                        class="metadata-value"
+                    >
+                        0
+                    </span>
+
+                </div>
+
+            </div>
+
 
             <div
                 id="result"
