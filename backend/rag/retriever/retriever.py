@@ -29,7 +29,7 @@ class Retriever:
             Vector database instance.
 
         embedding_manager : EmbeddingManager, optional
-            Embedding generation manager.
+            Manager responsible for generating embeddings.
 
         top_k : int
             Number of results to retrieve.
@@ -58,6 +58,7 @@ class Retriever:
         self,
         query,
         top_k=None,
+        source=None,
     ):
         """
         Retrieve documents relevant to a query.
@@ -69,6 +70,10 @@ class Retriever:
 
         top_k : int, optional
             Number of results to return.
+
+        source : str, optional
+            Synchronized source identifier used to
+            restrict retrieval to a specific source.
 
         Returns
         -------
@@ -100,18 +105,43 @@ class Retriever:
             )
         )
 
+        # ------------------------------------------------------
+        # Optional source-aware filtering
+        # ------------------------------------------------------
+
+        where = None
+
+        if source is not None:
+
+            where = {
+                "synchronized_source": str(source)
+            }
+
         return self.database.search(
             query_embedding=query_embedding,
             n_results=number_of_results,
+            where=where,
         )
 
     def retrieve_documents(
         self,
         query,
         top_k=None,
+        source=None,
     ):
         """
         Retrieve only the documents from a query.
+
+        Parameters
+        ----------
+        query : str
+            User search query.
+
+        top_k : int, optional
+            Number of results to return.
+
+        source : str, optional
+            Synchronized source identifier.
 
         Returns
         -------
@@ -122,6 +152,7 @@ class Retriever:
         results = self.retrieve(
             query=query,
             top_k=top_k,
+            source=source,
         )
 
         documents = results.get(
@@ -138,14 +169,27 @@ class Retriever:
         self,
         query,
         top_k=None,
+        source=None,
     ):
         """
         Retrieve metadata associated with results.
+
+        Parameters
+        ----------
+        query : str
+            User search query.
+
+        top_k : int, optional
+            Number of results to return.
+
+        source : str, optional
+            Synchronized source identifier.
         """
 
         results = self.retrieve(
             query=query,
             top_k=top_k,
+            source=source,
         )
 
         metadata = results.get(
@@ -162,14 +206,28 @@ class Retriever:
         self,
         query,
         top_k=None,
+        source=None,
     ):
         """
-        Return documents together with similarity distances.
+        Return documents together with similarity
+        distances.
+
+        Parameters
+        ----------
+        query : str
+            User search query.
+
+        top_k : int, optional
+            Number of results to return.
+
+        source : str, optional
+            Synchronized source identifier.
         """
 
         results = self.retrieve(
             query=query,
             top_k=top_k,
+            source=source,
         )
 
         documents = results.get(

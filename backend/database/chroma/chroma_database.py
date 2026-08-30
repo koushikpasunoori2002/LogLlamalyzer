@@ -61,7 +61,9 @@ class ChromaDatabase(BaseVectorDatabase):
             self.client.get_or_create_collection(
                 name=self.collection_name,
                 metadata={
-                    "description": "LogLlamalyzer log embeddings"
+                    "description": (
+                        "LogLlamalyzer log embeddings"
+                    )
                 },
             )
         )
@@ -96,9 +98,30 @@ class ChromaDatabase(BaseVectorDatabase):
         self,
         query_embedding,
         n_results=5,
+        where=None,
     ):
         """
         Search for vectors similar to a query embedding.
+
+        Parameters
+        ----------
+        query_embedding : iterable
+            Query embedding vector.
+
+        n_results : int
+            Number of results to return.
+
+        where : dict, optional
+            ChromaDB metadata filter.
+
+            Example
+            -------
+            {
+                "synchronized_source": "server-a"
+            }
+
+            If None, the search is performed across
+            the entire collection.
         """
 
         if hasattr(query_embedding, "tolist"):
@@ -110,11 +133,15 @@ class ChromaDatabase(BaseVectorDatabase):
         results = self.collection.query(
             query_embeddings=[query_embedding],
             n_results=n_results,
+            where=where,
         )
 
         return results
 
-    def delete(self, ids):
+    def delete(
+        self,
+        ids,
+    ):
         """
         Delete vectors by ID.
         """
