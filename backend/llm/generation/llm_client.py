@@ -13,6 +13,9 @@ from .response import LLMResponse
 class LLMClient:
     """
     Client for local Ollama LLM inference.
+
+    Supports configurable generation limits and model
+    keep-alive behaviour for performance optimisation.
     """
 
     def __init__(
@@ -20,10 +23,68 @@ class LLMClient:
         model="llama3.1:8b",
         base_url="http://localhost:11434",
         timeout=120,
+        num_predict=256,
+        keep_alive="10m",
     ):
+        """
+        Initialise the Ollama client.
+
+        Parameters
+        ----------
+        model : str
+            Ollama model name.
+
+        base_url : str
+            Ollama server URL.
+
+        timeout : int | float
+            HTTP request timeout in seconds.
+
+        num_predict : int | None
+            Maximum number of tokens to generate.
+
+            If None, Ollama's default generation limit
+            is used.
+
+        keep_alive : str | int | float
+            How long Ollama should keep the model loaded
+            after a request.
+
+            Examples:
+                "10m"
+                "30m"
+                -1
+        """
+
         self.model = model
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
+
+        # ----------------------------------------------------------
+        # Generation configuration
+        # ----------------------------------------------------------
+
+        if num_predict is not None:
+
+            if not isinstance(
+                num_predict,
+                int,
+            ):
+
+                raise TypeError(
+                    "num_predict must be an integer "
+                    "or None."
+                )
+
+            if num_predict <= 0:
+
+                raise ValueError(
+                    "num_predict must be greater than 0."
+                )
+
+        self.num_predict = num_predict
+
+        self.keep_alive = keep_alive
 
     # ----------------------------------------------------------
     # Generate
@@ -40,6 +101,7 @@ class LLMClient:
         """
 
         if not isinstance(prompt, str):
+
             raise TypeError(
                 "prompt must be a string."
             )
@@ -47,6 +109,7 @@ class LLMClient:
         prompt = prompt.strip()
 
         if not prompt:
+
             raise ValueError(
                 "prompt cannot be empty."
             )
@@ -55,13 +118,26 @@ class LLMClient:
             f"{self.base_url}/api/generate"
         )
 
+        options = {
+            "temperature": temperature,
+        }
+
+        # ----------------------------------------------------------
+        # Optional output-token limit
+        # ----------------------------------------------------------
+
+        if self.num_predict is not None:
+
+            options["num_predict"] = (
+                self.num_predict
+            )
+
         payload = {
             "model": self.model,
             "prompt": prompt,
             "stream": False,
-            "options": {
-                "temperature": temperature,
-            },
+            "keep_alive": self.keep_alive,
+            "options": options,
         }
 
         try:
@@ -93,7 +169,15 @@ class LLMClient:
                 f"Ollama request failed: {exc}"
             ) from exc
 
-        data = response.json()
+        try:
+
+            data = response.json()
+
+        except ValueError as exc:
+
+            raise RuntimeError(
+                "Ollama returned an invalid JSON response."
+            ) from exc
 
         answer = data.get(
             "response",
@@ -105,6 +189,10 @@ class LLMClient:
             raise RuntimeError(
                 "Ollama returned an empty response."
             )
+
+        # ----------------------------------------------------------
+        # Preserve Ollama timing information
+        # ----------------------------------------------------------
 
         metadata = {
             "source": "ollama",
@@ -133,11 +221,41 @@ class LLMClient:
                 data["prompt_eval_count"]
             )
 
+        if "prompt_eval_duration" in data:
+
+            metadata["prompt_eval_duration"] = (
+                data["prompt_eval_duration"]
+            )
+
         if "eval_count" in data:
 
             metadata["eval_count"] = (
                 data["eval_count"]
             )
+
+        if "eval_duration" in data:
+
+            metadata["eval_duration"] = (
+                data["eval_duration"]
+            )
+
+        if "load_duration" in data:
+
+            metadata["load_duration"] = (
+                data["load_duration"]
+            )
+
+        # ----------------------------------------------------------
+        # Record optimisation configuration
+        # ----------------------------------------------------------
+
+        metadata["num_predict"] = (
+            self.num_predict
+        )
+
+        metadata["keep_alive"] = (
+            self.keep_alive
+        )
 
         return LLMResponse(
             query=prompt,
@@ -228,12 +346,22 @@ class LLMClient:
             "model": self.model,
             "base_url": self.base_url,
             "timeout": self.timeout,
+            "num_predict": self.num_predict,
+            "keep_alive": self.keep_alive,
         }
+
+    # ----------------------------------------------------------
+    # Representation
+    # ----------------------------------------------------------
 
     def __repr__(self):
 
         return (
             f"LLMClient("
             f"model='{self.model}', "
-            f"base_url='{self.base_url}')"
+            f"base_url='{self.base_url}', "
+            f"num_predict="
+            f"{self.num_predict}, "
+            f"keep_alive="
+            f"'{self.keep_alive}')"
         )
