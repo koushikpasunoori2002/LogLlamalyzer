@@ -1,0 +1,29 @@
+{
+    "benchmark_records": 6,
+    "retrieval_queries": 5,
+    "retrieval": {
+        "hit_at_1_percent": 100.0,
+        "hit_at_3_percent": 100.0,
+        "mrr": 1.0,
+        "classification_preservation_percent": 100.0,
+        "severity_preservation_percent": 100.0,
+        "source_filtering_accuracy_percent": 100.0
+    },
+    "performance": {
+        "analyzer_initialisation_seconds": 0.0,
+        "average_embedding_seconds": 0.0167,
+        "average_retrieval_seconds": 0.0178,
+        "average_context_seconds": 0.0256,
+        "average_llm_analysis_seconds": 44.0326,
+        "average_total_seconds": 44.0997,
+        "minimum_total_seconds": 41.8527,
+        "maximum_total_seconds": 49.6121,
+        "bottleneck": "LLM Analysis"
+    },
+    "reliability": {
+        "checks": 3,
+        "passed": 3,
+        "reliability_percent": 100.0,
+        "analysis_success_rate_percent": 100.0
+    }
+}
