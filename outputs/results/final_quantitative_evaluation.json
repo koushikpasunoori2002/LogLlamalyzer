@@ -11,13 +11,13 @@
     },
     "performance": {
         "analyzer_initialisation_seconds": 0.0,
-        "average_embedding_seconds": 0.0167,
-        "average_retrieval_seconds": 0.0178,
-        "average_context_seconds": 0.0256,
-        "average_llm_analysis_seconds": 44.0326,
-        "average_total_seconds": 44.0997,
-        "minimum_total_seconds": 41.8527,
-        "maximum_total_seconds": 49.6121,
+        "average_embedding_seconds": 0.0402,
+        "average_retrieval_seconds": 0.0181,
+        "average_context_seconds": 0.0184,
+        "average_llm_analysis_seconds": 43.3295,
+        "average_total_seconds": 43.444,
+        "minimum_total_seconds": 38.8939,
+        "maximum_total_seconds": 49.8583,
         "bottleneck": "LLM Analysis"
     },
     "reliability": {

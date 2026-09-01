@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
     <meta charset="UTF-8">
@@ -22,6 +23,10 @@
 
     <main class="container">
 
+        <!-- =====================================================
+             HEADER
+             ===================================================== -->
+
         <header class="header">
 
             <h1>LogLlamalyzer</h1>
@@ -32,6 +37,10 @@
 
         </header>
 
+
+        <!-- =====================================================
+             QUERY SECTION
+             ===================================================== -->
 
         <section class="query-section">
 
@@ -53,9 +62,7 @@
                 Log Source
             </label>
 
-            <select
-                id="source"
-            >
+            <select id="source">
 
                 <option value="">
                     All synchronized sources
@@ -92,12 +99,165 @@
         </section>
 
 
+        <!-- =====================================================
+             QUANTITATIVE SECURITY DASHBOARD
+             ===================================================== -->
+
+        <section
+            id="dashboard"
+            class="dashboard-section"
+        >
+
+            <div class="dashboard-heading">
+
+                <div>
+
+                    <h2>
+                        Quantitative Security Dashboard
+                    </h2>
+
+                    <p>
+                        Summary of the security evidence
+                        returned for the current query.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- -------------------------------------------------
+                 Summary cards
+                 ------------------------------------------------- -->
+
+            <div class="dashboard-cards">
+
+                <div class="dashboard-card">
+
+                    <span class="dashboard-card-label">
+                        Total Evidence
+                    </span>
+
+                    <span
+                        id="dashboard-total"
+                        class="dashboard-card-value"
+                    >
+                        0
+                    </span>
+
+                </div>
+
+
+                <div class="dashboard-card">
+
+                    <span class="dashboard-card-label">
+                        High Severity
+                    </span>
+
+                    <span
+                        id="dashboard-high"
+                        class="dashboard-card-value"
+                    >
+                        0
+                    </span>
+
+                </div>
+
+
+                <div class="dashboard-card">
+
+                    <span class="dashboard-card-label">
+                        AUTH_FAILURE
+                    </span>
+
+                    <span
+                        id="dashboard-auth-failure"
+                        class="dashboard-card-value"
+                    >
+                        0
+                    </span>
+
+                </div>
+
+
+                <div class="dashboard-card">
+
+                    <span class="dashboard-card-label">
+                        SUDO_COMMAND
+                    </span>
+
+                    <span
+                        id="dashboard-sudo"
+                        class="dashboard-card-value"
+                    >
+                        0
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- -------------------------------------------------
+                 Source and event-type breakdown
+                 ------------------------------------------------- -->
+
+            <div class="dashboard-breakdown">
+
+                <div class="dashboard-panel">
+
+                    <h3>
+                        Evidence by Source
+                    </h3>
+
+                    <div
+                        id="dashboard-sources"
+                        class="dashboard-list"
+                    >
+                        <p class="dashboard-empty">
+                            No evidence available.
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div class="dashboard-panel">
+
+                    <h3>
+                        Evidence by Event Type
+                    </h3>
+
+                    <div
+                        id="dashboard-events"
+                        class="dashboard-list"
+                    >
+                        <p class="dashboard-empty">
+                            No evidence available.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             SECURITY ANALYSIS
+             ===================================================== -->
+
         <section class="result-section">
 
             <h2>
                 Security Analysis
             </h2>
 
+
+            <!-- -------------------------------------------------
+                 API metadata
+                 ------------------------------------------------- -->
 
             <div
                 id="result-metadata"
@@ -154,12 +314,26 @@
             </div>
 
 
+            <!-- -------------------------------------------------
+                 LLM analysis
+                 ------------------------------------------------- -->
+
             <div
                 id="result"
                 class="result"
             >
                 Analysis results will appear here.
             </div>
+
+
+            <!-- -------------------------------------------------
+                 Structured log evidence
+                 ------------------------------------------------- -->
+
+            <div
+                id="evidence"
+                class="evidence"
+            ></div>
 
         </section>
 
@@ -169,4 +343,5 @@
     <script src="script.js"></script>
 
 </body>
+
 </html>

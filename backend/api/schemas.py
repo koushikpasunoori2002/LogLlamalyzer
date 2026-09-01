@@ -36,6 +36,40 @@ class AnalyzeMetadata(BaseModel):
     knowledge_results: int = 0
 
 
+class EvidenceItem(BaseModel):
+    """
+    Represents one retrieved log evidence item.
+    """
+
+    timestamp: Optional[str] = None
+
+    hostname: Optional[str] = None
+
+    process: Optional[str] = None
+
+    severity: Optional[str] = None
+
+    event: Optional[str] = None
+
+    event_type: Optional[str] = None
+
+    user: Optional[str] = None
+
+    ip: Optional[str] = None
+
+    port: Optional[int] = None
+
+    protocol: Optional[str] = None
+
+    source_file: Optional[str] = None
+
+    source: Optional[str] = None
+
+    message: str = ""
+
+    distance: Optional[float] = None
+
+
 class AnalyzeResponse(BaseModel):
     """
     Response model returned by the analysis endpoint.
@@ -49,4 +83,8 @@ class AnalyzeResponse(BaseModel):
 
     metadata: AnalyzeMetadata = Field(
         default_factory=AnalyzeMetadata
+    )
+
+    evidence: List[EvidenceItem] = Field(
+        default_factory=list
     )

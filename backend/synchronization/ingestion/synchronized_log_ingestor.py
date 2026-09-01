@@ -26,6 +26,9 @@ class SynchronizedLogIngestor:
 
     Existing chunks are detected before embedding generation,
     allowing already-processed data to be skipped.
+
+    Large insertions are written in batches so they remain
+    within ChromaDB's supported batch size.
     """
 
     def __init__(
@@ -57,9 +60,7 @@ class SynchronizedLogIngestor:
             else ChunkManager()
         )
 
-        self.top_level_source = (
-            top_level_source
-        )
+        self.top_level_source = top_level_source
 
         self.last_ingest_stats = {
             "records_received": 0,
@@ -87,19 +88,52 @@ class SynchronizedLogIngestor:
         if source is not None:
             return str(source)
 
-        if hasattr(
-            record,
-            "source_file",
-        ):
-            return str(
-                record.source_file
-            )
+        if hasattr(record, "source_file"):
+            return str(record.source_file)
 
         return self.top_level_source
 
     # ----------------------------------------------------------
     # Metadata
     # ----------------------------------------------------------
+
+    def _normalise_metadata(
+        self,
+        metadata,
+    ):
+        """
+        Convert metadata values into ChromaDB-compatible
+        scalar values.
+
+        Supported values are preserved:
+
+            str
+            int
+            float
+            bool
+
+        None values are omitted.
+
+        Any other value is converted to a string.
+        """
+
+        normalised = {}
+
+        for key, value in metadata.items():
+
+            if value is None:
+                continue
+
+            if isinstance(
+                value,
+                (str, int, float, bool),
+            ):
+                normalised[str(key)] = value
+                continue
+
+            normalised[str(key)] = str(value)
+
+        return normalised
 
     def _record_metadata(
         self,
@@ -110,28 +144,24 @@ class SynchronizedLogIngestor:
         Convert LogRecord information into metadata.
         """
 
-        if hasattr(
-            record,
-            "to_dict",
-        ):
+        if hasattr(record, "to_dict"):
+
             metadata = record.to_dict()
 
-        elif hasattr(
-            record,
-            "__dict__",
-        ):
+        elif hasattr(record, "__dict__"):
+
             metadata = vars(record).copy()
 
         else:
+
             metadata = {}
 
-        metadata["synchronized_source"] = (
-            str(source)
-        )
-
+        metadata["synchronized_source"] = str(source)
         metadata["source"] = str(source)
 
-        return metadata
+        return self._normalise_metadata(
+            metadata
+        )
 
     # ----------------------------------------------------------
     # Record text
@@ -142,16 +172,55 @@ class SynchronizedLogIngestor:
         record,
     ):
         """
-        Extract text used for chunk creation.
+        Build a structured searchable representation of a log record.
+
+        The representation includes important security fields so that
+        semantic retrieval can match queries against event type,
+        severity, process, user, network information, and the
+        original log message.
         """
 
-        if hasattr(
-            record,
-            "message",
-        ):
-            return str(
-                record.message
+        fields = []
+
+        field_names = [
+            ("Log type", "log_type"),
+            ("Timestamp", "timestamp"),
+            ("Hostname", "hostname"),
+            ("Process", "process"),
+            ("Severity", "severity"),
+            ("Event", "event"),
+            ("Event type", "event_type"),
+            ("User", "user"),
+            ("IP address", "ip"),
+            ("Port", "port"),
+            ("Protocol", "protocol"),
+            ("Message", "message"),
+        ]
+
+        for label, attribute in field_names:
+
+            if not hasattr(record, attribute):
+                continue
+
+            value = getattr(
+                record,
+                attribute,
             )
+
+            if value is None:
+                continue
+
+            value = str(value).strip()
+
+            if not value:
+                continue
+
+            fields.append(
+                f"{label}: {value}"
+            )
+
+        if fields:
+            return "\n".join(fields)
 
         return str(record)
 
@@ -248,14 +317,10 @@ class SynchronizedLogIngestor:
             )
 
         digest = hashlib.sha256(
-            identity.encode(
-                "utf-8"
-            )
+            identity.encode("utf-8")
         ).hexdigest()[:24]
 
-        return (
-            f"sync_{digest}"
-        )
+        return f"sync_{digest}"
 
     # ----------------------------------------------------------
     # Existing IDs
@@ -283,7 +348,6 @@ class SynchronizedLogIngestor:
             return set()
 
         if not stored:
-
             return set()
 
         stored_ids = stored.get(
@@ -318,6 +382,97 @@ class SynchronizedLogIngestor:
         }
 
     # ----------------------------------------------------------
+    # Batched storage
+    # ----------------------------------------------------------
+
+    def _store_chunks(
+        self,
+        chunks,
+        embeddings,
+        batch_size=5000,
+    ):
+        """
+        Store chunks in batches.
+
+        Parameters
+        ----------
+        chunks : list
+            Chunks to store.
+
+        embeddings : list
+            Corresponding embeddings.
+
+        batch_size : int
+            Maximum number of records written per
+            ChromaDB add() operation.
+
+        Returns
+        -------
+        int
+            Number of chunks successfully stored.
+        """
+
+        if not chunks:
+            return 0
+
+        if len(chunks) != len(embeddings):
+            raise ValueError(
+                "The number of chunks and embeddings "
+                "must be identical."
+            )
+
+        if batch_size <= 0:
+            raise ValueError(
+                "batch_size must be greater than zero."
+            )
+
+        total_indexed = 0
+
+        for start in range(
+            0,
+            len(chunks),
+            batch_size,
+        ):
+
+            end = min(
+                start + batch_size,
+                len(chunks),
+            )
+
+            batch_chunks = chunks[start:end]
+            batch_embeddings = embeddings[start:end]
+
+            ids = [
+                chunk.chunk_id
+                for chunk in batch_chunks
+            ]
+
+            documents = [
+                chunk.text
+                for chunk in batch_chunks
+            ]
+
+            metadatas = [
+                self._normalise_metadata(
+                    chunk.metadata
+                )
+                for chunk in batch_chunks
+            ]
+
+            self.database.add(
+                ids=ids,
+                embeddings=batch_embeddings,
+                documents=documents,
+                metadatas=metadatas,
+            )
+
+            total_indexed += len(
+                batch_chunks
+            )
+
+        return total_indexed
+
+    # ----------------------------------------------------------
     # Ingest
     # ----------------------------------------------------------
 
@@ -329,49 +484,50 @@ class SynchronizedLogIngestor:
         """
         Incrementally ingest LogRecord objects.
 
-        Existing chunks are detected before embedding generation.
+        Existing chunks are detected before embedding
+        generation.
+
+        Duplicate IDs within the current batch are also
+        prevented.
 
         Returns only newly indexed chunks.
         """
 
-        records = list(
-            records
-        )
+        records = list(records)
 
         self._reset_stats(
             len(records)
         )
 
+        if not records:
+            return []
+
         new_chunks = []
+
+        # IDs already selected for insertion during this
+        # ingestion call.
+        pending_ids = set()
 
         for record in records:
 
-            record_source = (
-                self._record_source(
-                    record,
-                    source=source,
-                )
+            record_source = self._record_source(
+                record,
+                source=source,
             )
 
-            metadata = (
-                self._record_metadata(
-                    record,
-                    record_source,
-                )
+            metadata = self._record_metadata(
+                record,
+                record_source,
             )
 
-            text = (
-                self._record_text(
-                    record
-                )
+            text = self._record_text(
+                record
             )
 
-            chunks = (
-                self.chunk_manager.add_text(
-                    text=text,
-                    source=record_source,
-                    metadata=metadata,
-                )
+            chunks = self.chunk_manager.add_text(
+                text=text,
+                source=record_source,
+                metadata=metadata,
             )
 
             if not chunks:
@@ -398,12 +554,22 @@ class SynchronizedLogIngestor:
 
                 chunk.chunk_id = stable_id
 
-                existing_ids = (
-                    self._existing_ids(
-                        [stable_id]
-                    )
+                # Prevent duplicate IDs inside this
+                # current ingestion batch.
+                if stable_id in pending_ids:
+
+                    self.last_ingest_stats[
+                        "chunks_skipped"
+                    ] += 1
+
+                    continue
+
+                existing_ids = self._existing_ids(
+                    [stable_id]
                 )
 
+                # Prevent inserting an ID already stored
+                # in the database.
                 if stable_id in existing_ids:
 
                     self.last_ingest_stats[
@@ -411,6 +577,10 @@ class SynchronizedLogIngestor:
                     ] += 1
 
                     continue
+
+                pending_ids.add(
+                    stable_id
+                )
 
                 record_new_chunks.append(
                     chunk
@@ -437,7 +607,6 @@ class SynchronizedLogIngestor:
         # ------------------------------------------------------
 
         if not new_chunks:
-
             return []
 
         # ------------------------------------------------------
@@ -454,35 +623,19 @@ class SynchronizedLogIngestor:
             "embeddings_generated"
         ] = len(new_chunks)
 
-        ids = [
-            chunk.chunk_id
-            for chunk in new_chunks
-        ]
-
-        documents = [
-            chunk.text
-            for chunk in new_chunks
-        ]
-
-        metadatas = [
-            chunk.metadata
-            for chunk in new_chunks
-        ]
-
         # ------------------------------------------------------
-        # Store only new vectors
+        # Store vectors safely in batches
         # ------------------------------------------------------
 
-        self.database.add(
-            ids=ids,
+        indexed_count = self._store_chunks(
+            chunks=new_chunks,
             embeddings=embeddings,
-            documents=documents,
-            metadatas=metadatas,
+            batch_size=5000,
         )
 
         self.last_ingest_stats[
             "chunks_indexed"
-        ] = len(new_chunks)
+        ] = indexed_count
 
         return new_chunks
 
@@ -510,7 +663,7 @@ class SynchronizedLogIngestor:
 
     def ingestion_statistics(self):
         """
-        Return the statistics from the latest ingestion.
+        Return statistics from the latest ingestion.
         """
 
         return dict(
@@ -553,6 +706,7 @@ class SynchronizedLogIngestor:
                 self.top_level_source
             ),
             "incremental_processing": True,
+            "batch_size": 5000,
             "last_ingest_stats": (
                 self.ingestion_statistics()
             ),
@@ -580,4 +734,3 @@ class SynchronizedLogIngestor:
             f"vectors={self.count()}, "
             f"incremental=True)"
         )
-        

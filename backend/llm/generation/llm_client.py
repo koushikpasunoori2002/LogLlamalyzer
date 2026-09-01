@@ -23,7 +23,7 @@ class LLMClient:
         model="llama3.1:8b",
         base_url="http://localhost:11434",
         timeout=120,
-        num_predict=256,
+        num_predict=512,
         keep_alive="10m",
     ):
         """

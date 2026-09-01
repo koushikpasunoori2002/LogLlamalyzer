@@ -127,6 +127,155 @@ class KnowledgeRetriever:
         )
 
     # ----------------------------------------------------------
+    # Filter knowledge by query relevance
+    # ----------------------------------------------------------
+
+    def retrieve_relevant(
+        self,
+        query,
+        top_k=None,
+    ):
+        """
+        Retrieve knowledge and keep results that share
+        meaningful terms with the query.
+        """
+
+        query = str(
+            query
+        ).strip().lower()
+
+        if not query:
+            raise ValueError(
+                "query cannot be empty."
+            )
+
+        results = self.retrieve(
+            query=query,
+            top_k=(
+                top_k
+                if top_k is not None
+                else self.top_k
+            ),
+        )
+
+        documents = results.get(
+            "documents",
+            [[]],
+        )
+
+        if not documents:
+            return {
+                "ids": [[]],
+                "documents": [[]],
+                "metadatas": [[]],
+                "distances": [[]],
+            }
+
+        documents = documents[0]
+
+        metadatas = results.get(
+            "metadatas",
+            [[]],
+        )
+
+        metadatas = (
+            metadatas[0]
+            if metadatas
+            else []
+        )
+
+        distances = results.get(
+            "distances",
+            [[]],
+        )
+
+        distances = (
+            distances[0]
+            if distances
+            else []
+        )
+
+        # ------------------------------------------------------
+        # Security terms
+        # ------------------------------------------------------
+
+        stop_words = {
+            "the",
+            "a",
+            "an",
+            "is",
+            "are",
+            "was",
+            "were",
+            "for",
+            "from",
+            "to",
+            "of",
+            "and",
+            "or",
+            "in",
+            "on",
+            "with",
+            "this",
+            "that",
+            "attack",
+            "activity",
+            "possible",
+            "potential",
+        }
+
+        query_terms = {
+            term
+            for term in query.split()
+            if len(term) >= 3
+            and term not in stop_words
+        }
+
+        selected_indices = []
+
+        for index, document in enumerate(
+            documents
+        ):
+
+            document_text = str(
+                document
+            ).lower()
+
+            document_terms = set(
+                document_text.split()
+            )
+
+            if query_terms.intersection(
+                document_terms
+            ):
+                selected_indices.append(
+                    index
+                )
+
+        return {
+            "ids": [[
+                results["ids"][0][index]
+                for index in selected_indices
+            ]],
+
+            "documents": [[
+                documents[index]
+                for index in selected_indices
+            ]],
+
+            "metadatas": [[
+                metadatas[index]
+                for index in selected_indices
+                if index < len(metadatas)
+            ]],
+
+            "distances": [[
+                distances[index]
+                for index in selected_indices
+                if index < len(distances)
+            ]],
+        }
+    # ----------------------------------------------------------
     # Information
     # ----------------------------------------------------------
 
